@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auth Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+  <div class="bg-white shadow-md rounded-lg p-6 w-full max-w-md mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-center">Signup</h2>
+    <input id="signup-username" type="text" placeholder="Username"
+      class="w-full p-2 border border-gray-300 rounded mb-3" />
+    <input id="signup-password" type="password" placeholder="Password"
+      class="w-full p-2 border border-gray-300 rounded mb-4" />
+    <button onclick="signup()"
+      class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded">Signup</button>
+  </div>
+
+  <div class="bg-white shadow-md rounded-lg p-6 w-full max-w-md mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-center">Signin</h2>
+    <input id="signin-username" type="text" placeholder="Username"
+      class="w-full p-2 border border-gray-300 rounded mb-3" />
+    <input id="signin-password" type="password" placeholder="Password"
+      class="w-full p-2 border border-gray-300 rounded mb-4" />
+    <button onclick="signin()"
+      class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded">Signin</button>
+  </div>
+
+  <div class="bg-white shadow-md rounded-lg p-6 w-full max-w-md text-center mb-6">
+    <h2 class="text-xl font-semibold mb-4">User Information</h2>
+    <div id="information" class="text-gray-700"></div>
+    <button onclick="getuserInformation()"
+      class="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">Get Info</button>
+  </div>
+
+  <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded">
+    Logout
+  </button>
+
+  <script>
+    async function signup() {
+      const username = document.getElementById("signup-username").value;
+      const password = document.getElementById("signup-password").value;
+
+      try {
+        await axios.post("http://localhost:3000/signup", { username, password });
+        alert("You are signed up");
+      } catch (err) {
+        alert("Signup failed: " + err.response.data.message);
+      }
+    }
+
+    async function signin() {
+      const username = document.getElementById("signin-username").value;
+      const password = document.getElementById("signin-password").value;
+
+      try {
+        const response = await axios.post("http://localhost:3000/signin", { username, password });
+        localStorage.setItem("token", response.data.token);
+        alert("You are signed in");
+      } catch (err) {
+        alert("Signin failed: " + err.response.data.message);
+      }
+    }
+
+    async function getuserInformation() {
+      try {
+        const response = await axios.get("http://localhost:3000/me", {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+          },
+        });
+
+        document.getElementById("information").innerText =
+          `Username: ${response.data.username}\nPassword: ${response.data.password}`;
+      } catch (err) {
+        alert("Error fetching user information");
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      alert("Logged out");
+      document.getElementById("information").innerText = "";
+    }
+  </script>
+
+</body>
+</html>

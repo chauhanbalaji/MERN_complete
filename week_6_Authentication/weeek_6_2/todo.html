@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modern TODO App</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6 font-sans">
+  <h1 class="text-3xl font-bold mb-4">TODO Application</h1>
+
+  <div id="auth-section" class="w-full max-w-md space-y-6">
+    <div class="bg-white shadow-md rounded p-6">
+      <h2 class="text-xl font-semibold mb-2">Signup</h2>
+      <input id="signup-username" type="text" placeholder="Username" class="input" />
+      <input id="signup-password" type="password" placeholder="Password" class="input mt-2" />
+      <button onclick="signup()" class="btn mt-4 bg-green-500 hover:bg-green-600">Signup</button>
+    </div>
+
+    <div class="bg-white shadow-md rounded p-6">
+      <h2 class="text-xl font-semibold mb-2">Signin</h2>
+      <input id="signin-username" type="text" placeholder="Username" class="input" />
+      <input id="signin-password" type="password" placeholder="Password" class="input mt-2" />
+      <button onclick="signin()" class="btn mt-4 bg-blue-500 hover:bg-blue-600">Signin</button>
+    </div>
+  </div>
+
+  <div id="todo-section" class="bg-white shadow-md rounded p-6 w-full max-w-md mb-6 hidden">
+    <h2 class="text-xl font-semibold mb-4">Your TODOs</h2>
+
+    <div class="flex mb-4">
+      <input id="todo-title" type="text" placeholder="New todo" class="input flex-grow" />
+      <button onclick="addTodo()" class="btn ml-2 bg-indigo-500 hover:bg-indigo-600">Add</button>
+    </div>
+
+    <ul id="todo-list" class="space-y-2"></ul>
+
+    <button onclick="logout()" class="btn mt-6 bg-red-500 hover:bg-red-600 w-full">Logout</button>
+  </div>
+
+  <script>
+    if (localStorage.getItem("token")) {
+      showTodoSection();
+      loadTodos();
+    }
+
+    function showTodoSection() {
+      document.getElementById("auth-section").classList.add("hidden");
+      document.getElementById("todo-section").classList.remove("hidden");
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      location.reload();
+    }
+
+    async function signup() {
+      const username = document.getElementById("signup-username").value;
+      const password = document.getElementById("signup-password").value;
+      await axios.post("/signup", { username, password });
+      alert("Signup successful");
+    }
+
+    async function signin() {
+      const username = document.getElementById("signin-username").value;
+      const password = document.getElementById("signin-password").value;
+      const res = await axios.post("/signin", { username, password });
+      localStorage.setItem("token", res.data.token);
+      showTodoSection();
+      loadTodos();
+    }
+
+    async function addTodo() {
+      const title = document.getElementById("todo-title").value;
+      const token = localStorage.getItem("token");
+      await axios.post("/todo", { title }, { headers: { token } });
+      document.getElementById("todo-title").value = "";
+      loadTodos();
+    }
+
+    async function loadTodos() {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/todo", { headers: { token } });
+      const list = document.getElementById("todo-list");
+      list.innerHTML = "";
+
+      res.data.forEach(function(todo) {
+        const li = document.createElement("li");
+        li.className = "flex items-center justify-between bg-gray-200 px-3 py-2 rounded";
+
+        const left = document.createElement("div");
+        left.className = "flex items-center space-x-2";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = todo.completed;
+        checkbox.onchange = async function () {
+          await axios.put("/todo/" + todo.id, { completed: checkbox.checked }, { headers: { token } });
+          loadTodos();
+        };
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = todo.title;
+        input.className = "bg-transparent outline-none";
+        input.onchange = async function () {
+          await axios.put("/todo/" + todo.id, { title: input.value }, { headers: { token } });
+        };
+
+        left.appendChild(checkbox);
+        left.appendChild(input);
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "❌";
+        delBtn.className = "text-red-500 hover:text-red-700 text-lg";
+        delBtn.onclick = async function () {
+          await axios.delete("/todo/" + todo.id, { headers: { token } });
+          loadTodos();
+        };
+
+        li.appendChild(left);
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    }
+  </script>
+
+  <style>
+    .input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 0.375rem;
+    }
+    .btn {
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+    }
+  </style>
+</body>
+</html>
